@@ -147,121 +147,6 @@
             min-width: 0;
         }
 
-        /* ============ MAIN MENU ============ */
-        #main-menu {
-            width: min(100%, 420px);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            padding-top: clamp(10px, 4vh, 40px);
-        }
-        #main-menu.open { display: flex; }
-
-        .menu-logo {
-            width: clamp(64px, 16vmin, 84px);
-            height: clamp(64px, 16vmin, 84px);
-            border-radius: 30%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(32px, 8vmin, 44px);
-            background: linear-gradient(160deg, var(--wood-light), var(--plank-2));
-            border: 3px solid var(--plank-edge);
-            box-shadow: 0 6px 0 var(--wood-dark), inset 0 2px 0 rgba(255,255,255,0.5);
-            margin-bottom: 14px;
-        }
-
-        .menu-title {
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: clamp(28px, 9vmin, 40px);
-            letter-spacing: 1px;
-            margin: 0;
-            color: var(--ink);
-            text-shadow: 0 3px 0 var(--paper), 0 5px 0 rgba(122,74,36,0.25);
-        }
-
-        .menu-subtitle {
-            margin: 6px 0 clamp(14px, 4vh, 26px);
-            font-family: var(--font-display);
-            font-weight: 500;
-            font-size: 17px;
-            color: var(--ink-soft);
-        }
-
-        .mode-card {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            text-align: left;
-            padding: 18px 20px;
-            margin-bottom: 16px;
-            border-radius: var(--r-lg);
-            background: linear-gradient(160deg, var(--paper), var(--cream-2));
-            border: 3px solid var(--plank-edge);
-            box-shadow: 0 6px 0 rgba(122,74,36,0.45), 0 14px 26px rgba(122,74,36,0.25), inset 0 2px 0 rgba(255,255,255,0.8);
-            cursor: pointer;
-            font-family: var(--font-body);
-            color: var(--ink);
-            transition: transform 0.08s ease, box-shadow 0.08s ease;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .mode-card:active {
-            transform: translateY(4px);
-            box-shadow: 0 2px 0 rgba(122,74,36,0.45), 0 6px 14px rgba(122,74,36,0.25), inset 0 2px 0 rgba(255,255,255,0.8);
-        }
-
-        .mode-card-icon {
-            width: 62px;
-            height: 62px;
-            flex-shrink: 0;
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            border: 3px solid var(--plank-edge);
-            box-shadow: 0 3px 0 rgba(122,74,36,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
-        }
-        .mode-card--endless .mode-card-icon { background: linear-gradient(160deg, #ffe38a, var(--gold), var(--gold-deep)); }
-        .mode-card--goal .mode-card-icon { background: linear-gradient(160deg, #a3f0b8, var(--green), var(--green-deep)); }
-
-        .mode-card-body { flex: 1; min-width: 0; }
-
-        .mode-card-title {
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: 22px;
-            letter-spacing: 0.5px;
-            margin: 0 0 4px;
-        }
-        .mode-card--endless .mode-card-title { color: var(--gold-deep); }
-        .mode-card--goal .mode-card-title { color: var(--green-deep); }
-
-        .mode-card-desc {
-            margin: 0;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--ink-soft);
-            line-height: 1.35;
-        }
-
-        .mode-card-stat {
-            margin-top: 8px;
-            display: inline-block;
-            font-family: var(--font-display);
-            font-weight: 600;
-            font-size: 12.5px;
-            letter-spacing: 0.5px;
-            padding: 3px 10px;
-            border-radius: 20px;
-            background: var(--paper);
-            border: 2px solid rgba(122,74,36,0.3);
-            color: var(--ink);
-        }
-        .mode-card-stat.hidden { display: none; }
-
         /* ============ TOPBAR ============ */
         #app-topbar {
             width: 100%;
@@ -1336,32 +1221,6 @@
 <body>
 
     <!-- ============ MAIN MENU ============ -->
-    <div id="main-menu">
-        <div class="menu-logo">🧩</div>
-        <h1 class="menu-title">Gummy Merge Party</h1>
-        <p class="menu-subtitle">Choose Your Game Mode</p>
-
-        <button class="mode-card mode-card--endless" id="btn-mode-endless">
-            <div class="mode-card-icon">♾</div>
-            <div class="mode-card-body">
-                <h2 class="mode-card-title">ENDLESS</h2>
-                <p class="mode-card-desc">Make matches, create merges and get the highest score possible.</p>
-                <span class="mode-card-stat hidden" id="menu-best-score">BEST: 0</span>
-            </div>
-        </button>
-
-        <button class="mode-card mode-card--goal" id="btn-mode-goal">
-            <div class="mode-card-icon">🎯</div>
-            <div class="mode-card-body">
-                <h2 class="mode-card-title">GOAL MODE</h2>
-                <p class="mode-card-desc">Complete the objectives before you run out of moves.</p>
-                <span class="mode-card-stat" id="menu-goal-level">LEVEL 1</span>
-            </div>
-        </button>
-
-        <div class="app-footer">Gummy Merge Party - Bug Busters</div>
-    </div>
-
     <canvas id="flight-canvas"></canvas>
 
     <!-- ============ GAME ============ -->
@@ -1395,7 +1254,6 @@
                     <div class="banner-actions">
                         <button class="restart-btn primary-green" onclick="nextLevel()">NEXT LEVEL</button>
                         <button class="restart-btn" onclick="resetGame()">PLAY AGAIN</button>
-                        <button class="restart-btn secondary" onclick="goToMainMenu()">MAIN MENU</button>
                     </div>
                 </div>
 
@@ -1406,7 +1264,6 @@
                     <p id="fail-reason-text">You ran out of moves!</p>
                     <div class="banner-actions">
                         <button class="restart-btn" onclick="resetGame()">PLAY AGAIN</button>
-                        <button class="restart-btn secondary" onclick="goToMainMenu()">MAIN MENU</button>
                     </div>
                 </div>
 
@@ -1424,7 +1281,6 @@
                     </div>
                     <div class="banner-actions">
                         <button class="restart-btn" onclick="resetGame()">PLAY AGAIN</button>
-                        <button class="restart-btn secondary" onclick="goToMainMenu()">MAIN MENU</button>
                     </div>
                 </div>
             </div>
@@ -2022,44 +1878,16 @@
         /* =========================================
            2. SCREENS: MAIN MENU ↔ GAME
            ========================================= */
-        function showMainMenu() {
-            sessionId++;
-            gameState.screen = 'menu';
-            gameState.mode = null;
-            isGameOver = true;
-            isDragging = false;
-            inputLocked = false;
-            currentPath = [];
-            plinkoBalls = [];
-            clearTimeout(comboTimer);
-            FX.clear();
-            Flights.clear();
-            plinkoFX.clear();
-            failPending = false;
-            stopPathAnimation();
-            document.body.removeAttribute('data-mode');
-            document.body.classList.remove('landscape');
-            document.getElementById('app-shell').classList.add('hidden');
-            document.getElementById('control-panel').classList.remove('open');
+        // There is no mode-selection screen: the game always runs Goal Mode. The home button
+        // restarts the current level (same as a fresh start at the saved level).
+        function goToMainMenu() { startMode(GAME_MODES.GOAL); }
 
-            const best = loadEndlessBest();
-            const bestEl = document.getElementById('menu-best-score');
-            bestEl.textContent = 'BEST: ' + formatNumber(best);
-            bestEl.classList.toggle('hidden', best <= 0);
-            document.getElementById('menu-goal-level').textContent = 'LEVEL ' + loadGoalLevel();
-
-            document.getElementById('main-menu').classList.add('open');
-        }
-
-        function goToMainMenu() { SFX.click(); showMainMenu(); }
-
-        function startMode(mode) {
-            SFX.click();
+        function startMode(mode, quiet) {
+            if (!quiet) SFX.click();
             gameState.mode = mode;
             gameState.screen = 'game';
             if (mode === GAME_MODES.GOAL) gameState.level = loadGoalLevel();
             document.body.setAttribute('data-mode', mode);
-            document.getElementById('main-menu').classList.remove('open');
             document.getElementById('app-shell').classList.remove('hidden');
             layoutGame();
             resetGame();
@@ -2071,9 +1899,6 @@
             storageSet(STORAGE_KEYS.GOAL_CURRENT_LEVEL, gameState.level);
             resetGame();
         }
-
-        document.getElementById('btn-mode-endless').addEventListener('click', () => startMode(GAME_MODES.ENDLESS));
-        document.getElementById('btn-mode-goal').addEventListener('click', () => startMode(GAME_MODES.GOAL));
 
         /* =========================================
            3. ENDLESS: SCORE, COMBO, BEST
@@ -4213,9 +4038,9 @@
             if (icon && GOAL_IMAGE_SRC[c]) icon.style.backgroundImage = 'url("' + GOAL_IMAGE_SRC[c] + '")';
         });
 
-        // Page Load → Main Menu → Choose Mode → Initialize → Play
+        // Page Load → Goal Mode at the saved level → Play (no mode-selection screen).
         initPlinkoPegsAndLines();
-        showMainMenu();
+        startMode(GAME_MODES.GOAL, true);
         plinkoLoop();
     </script>
 </body>
