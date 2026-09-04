@@ -1552,6 +1552,10 @@
             maxCombo: 6
         };
 
+        // Hard rule for both modes: never more than this many bombs on the board at once
+        // (initial placement and drift-in refill both respect it).
+        const MAX_BOMBS_ON_BOARD = 2;
+
         // Design decision: Endless has NO move limit. It ends by bomb failure or board deadlock.
         const ENDLESS_CONFIG = {
             moveLimit: null,
@@ -1565,7 +1569,7 @@
                 bombChanceBase: 0.02,
                 bombChanceStep: 0.0015,
                 bombChanceMax: 0.10,
-                maxBombs: 3,
+                maxBombs: MAX_BOMBS_ON_BOARD,
                 frozenChance: 0.03,
                 maxFrozen: 4,
                 directionalChance: 0.025,
@@ -1575,7 +1579,8 @@
 
         // Every level (1 included) plays with all four colours and has a goal for each of them.
         // frozen/directional/bombs double as: initial placement count AND the on-board cap for blockers
-        // that drift in from the top during play (see GOAL refillBlocker).
+        // that drift in from the top during play (see GOAL refillBlocker). Every level, level 1 included,
+        // places at least one of each blocker type; bombs are always capped by MAX_BOMBS_ON_BOARD.
         // Goal is now CONSTANT on every level: 20 deliveries for each of the 4 colours (80 total).
         // A delivery needs a value-4 ball, i.e. 4 same-colour balls, so 80 goals ~= 320 balls.
         // GOAL_TARGET_PER_COLOR / LEVEL_MOVES are the two knobs to retune difficulty.
@@ -1589,12 +1594,12 @@
         });
 
         const LEVEL_CONFIGS = [
-            { level: 1, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 0, frozenMoves: 5, directional: 0, bombs: 0, bombTimer: 8 },
-            { level: 2, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 1, frozenMoves: 5, directional: 0, bombs: 0, bombTimer: 8 },
-            { level: 3, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 2, frozenMoves: 5, directional: 1, bombs: 0, bombTimer: 8 },
-            { level: 4, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 2, frozenMoves: 5, directional: 1, bombs: 0, bombTimer: 8 },
+            { level: 1, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 1, frozenMoves: 5, directional: 1, bombs: 1, bombTimer: 8 },
+            { level: 2, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 1, frozenMoves: 5, directional: 1, bombs: 1, bombTimer: 8 },
+            { level: 3, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 2, frozenMoves: 5, directional: 1, bombs: 1, bombTimer: 8 },
+            { level: 4, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 2, frozenMoves: 5, directional: 1, bombs: 1, bombTimer: 8 },
             { level: 5, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 2, frozenMoves: 5, directional: 2, bombs: 1, bombTimer: 8 },
-            { level: 6, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 3, frozenMoves: 5, directional: 2, bombs: 1, bombTimer: 7 },
+            { level: 6, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 3, frozenMoves: 5, directional: 2, bombs: 2, bombTimer: 7 },
             { level: 7, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 3, frozenMoves: 5, directional: 2, bombs: 2, bombTimer: 7 },
             { level: 8, moves: LEVEL_MOVES, colors: 4, goals: CONSTANT_GOALS(),  frozen: 3, frozenMoves: 5, directional: 3, bombs: 2, bombTimer: 6 }
         ];
@@ -1614,7 +1619,7 @@
                 frozen: Math.min(6, last.frozen + Math.floor(extra / 3)),
                 frozenMoves: 5,
                 directional: Math.min(6, last.directional + Math.floor(extra / 3)),
-                bombs: Math.min(4, last.bombs + Math.floor(extra / 4)),
+                bombs: Math.min(MAX_BOMBS_ON_BOARD, last.bombs + Math.floor(extra / 4)),
                 bombTimer: Math.max(5, last.bombTimer - Math.floor(extra / 4))
             };
         }
@@ -1842,7 +1847,7 @@
                 refillBlocker() {
                     const p = ENDLESS_CONFIG.pressure;
                     const bombChance = Math.min(p.bombChanceMax, p.bombChanceBase + gameState.movesUsed * p.bombChanceStep);
-                    if (countBoardClass('bomb') < p.maxBombs && Math.random() < bombChance) return 'bomb';
+                    if (countBoardClass('bomb') < Math.min(MAX_BOMBS_ON_BOARD, p.maxBombs) && Math.random() < bombChance) return 'bomb';
                     if (countBoardClass('frozen') < p.maxFrozen && Math.random() < p.frozenChance) return 'frozen';
                     if (countBoardClass('directional') < p.maxDirectional && Math.random() < p.directionalChance) return 'directional';
                     return null;
@@ -1926,12 +1931,12 @@
                 },
 
                 // Blockers drift in from the top during play. The level's frozen/directional/bombs values
-                // cap how many can be on the board at once (at least 1 each, so even level 1 sees them rarely).
+                // cap how many can be on the board at once (at least 1 each); bombs never exceed MAX_BOMBS_ON_BOARD.
                 refillBlocker() {
                     const cfg = getCurrentLevel();
                     const maxFrozen = Math.max(1, cfg.frozen);
                     const maxDirectional = Math.max(1, cfg.directional);
-                    const maxBombs = Math.max(1, cfg.bombs);
+                    const maxBombs = Math.min(MAX_BOMBS_ON_BOARD, Math.max(1, cfg.bombs));
                     const ramp = gameState.movesUsed * 0.002;
                     const bombChance = 0.03 + ramp;
                     const frozenChance = 0.05 + ramp;
@@ -2842,7 +2847,7 @@
                 applyRandomDirection(grid[coords.r][coords.c]);
             }
 
-            let countBombToPlace = Math.min(bombCount, allIndices.length);
+            let countBombToPlace = Math.min(bombCount, MAX_BOMBS_ON_BOARD, allIndices.length);
             for (let i = 0; i < countBombToPlace; i++) {
                 let randomIndex = Math.floor(Math.random() * allIndices.length);
                 let coords = allIndices.splice(randomIndex, 1)[0];
