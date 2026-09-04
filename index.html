@@ -2260,18 +2260,18 @@
 
         /* ---- Flight overlay: a merged ball leaves the Plinko tray and is delivered to its Goal (or the Score pill) ---- */
         /* ---- SFX: tiny synthesized sound layer (Web Audio, no audio assets). ----
-           Browsers only start audio inside an ACTIVATING user gesture: touchend, pointerup, mouseup,
-           click and keydown count; touchstart / pointerdown / mousedown do not. The board's first drag
-           begins on touchstart, so unlocking there left the context suspended until a banner button was
-           clicked (next level / play again). The context is therefore resumed on the activating events,
-           and sounds are only scheduled while it runs (a suspended context would queue them and dump
-           them all at once on start). All sounds are short oscillator or filtered-noise envelopes;
-           MASTER_GAIN is the one volume knob. */
+           Mobile browsers keep an AudioContext suspended until it is unlocked inside a user gesture.
+           This uses the recipe audio libraries use for iOS/Android: the context is created once at load
+           (not inside a touch handler), and on ANY gesture type a silent one-sample source is started
+           and resume() is called; the listeners stay so an interrupted context (phone call, backgrounding)
+           recovers on the next tap. Sounds are only scheduled while the context runs, or inside the very
+           gesture that starts it (a suspended context would queue them and dump them all at once).
+           All sounds are short oscillator or filtered-noise envelopes; MASTER_GAIN is the one volume knob. */
         const SFX = (() => {
             const AC = window.AudioContext || window.webkitAudioContext;
             const MASTER_GAIN = 0.35;
             let ctx = null, master = null;
-            let armed = false;   // true only inside the activating gesture that just asked the context to start
+            let armed = false;   // true only inside the gesture that just asked the context to start
 
             function create() {
                 if (!AC) return null;
@@ -2283,15 +2283,23 @@
                 }
                 return ctx;
             }
+            create();
 
-            ['touchend', 'pointerup', 'mouseup', 'click', 'keydown'].forEach(ev =>
-                window.addEventListener(ev, () => {
-                    const c = create();
-                    if (!c || c.state === 'running') return;
-                    armed = true;                             // sounds fired later in this same gesture may schedule
-                    c.resume().catch(() => {});
-                    setTimeout(() => { armed = false; }, 0);  // the gesture's dispatch is over by then
-                }, { passive: true, capture: true }));
+            function unlock() {
+                const c = create();
+                if (!c || c.state === 'running') return;
+                armed = true;                                 // sounds fired later in this same gesture may schedule
+                try {
+                    const src = c.createBufferSource();       // iOS wants a source started inside the gesture
+                    src.buffer = c.createBuffer(1, 1, 22050);
+                    src.connect(c.destination);
+                    src.start(0);
+                } catch (e) { /* ignore */ }
+                c.resume().catch(() => {});
+                setTimeout(() => { armed = false; }, 0);      // the gesture's dispatch is over by then
+            }
+            ['touchstart', 'touchend', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'keydown']
+                .forEach(ev => window.addEventListener(ev, unlock, { passive: true, capture: true }));
 
             // Returns the context only when a sound can actually play now (running, or starting in this gesture).
             function ensure() {
