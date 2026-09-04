@@ -59,7 +59,6 @@
             --page-pad: 10px;
             --gap: clamp(6px, 1.4vmin, 10px);
             --board-size: min(100vw - 2 * var(--page-pad) - var(--safe-left) - var(--safe-right), 440px);
-            --side-width: var(--board-size);
             --frame-pad: clamp(6px, calc(var(--board-size) * 0.026), 11px);
             --hud-label: clamp(10px, calc(var(--board-size) * 0.032), 13px);
             --hud-value: clamp(13px, calc(var(--board-size) * 0.042), 17px);
@@ -128,25 +127,6 @@
         }
 
         /* Landscape / wide screens: board on the left, HUD + Plinko on the right. */
-        body.landscape .app-shell {
-            width: auto;
-            display: grid;
-            grid-template-columns: var(--board-size) var(--side-width);
-            grid-template-areas: "top top" "board side";
-            align-items: start;
-            column-gap: var(--gap);
-            row-gap: var(--gap);
-        }
-        body.landscape #app-topbar { grid-area: top; }
-        body.landscape .board-wrap { grid-area: board; }
-        body.landscape .side-column {
-            grid-area: side;
-            display: flex;
-            flex-direction: column;
-            gap: var(--gap);
-            min-width: 0;
-        }
-
         /* ============ TOPBAR ============ */
         #app-topbar {
             width: 100%;
@@ -356,7 +336,6 @@
         }
         @supports not (container-type: inline-size) {
             @media (max-width: 380px) { #hud-endless .hud-pill-icon { display: none; } }
-            body.landscape #hud-endless .hud-pill-icon { display: none; }
         }
 
         /* Reusable "pop" for HUD values / goal chips */
@@ -1287,7 +1266,7 @@
         </div>
         </div>
 
-        <!-- Side column: settings, HUD, Plinko (stacks under/over the board in portrait, beside it in landscape) -->
+        <!-- Side column: settings, HUD, Plinko. Always stacks under the board (no side-by-side layout). -->
         <div class="side-column">
             <div id="control-panel">
                 <div class="control-panel-title">SETTINGS</div>
@@ -1593,7 +1572,8 @@
         /* =========================================
            0c. RESPONSIVE LAYOUT
            The board is as large as possible while the topbar, HUD, board and Plinko
-           all fit the visual viewport. Portrait stacks; landscape/wide puts HUD+Plinko beside the board.
+           all fit the visual viewport. The stack is always vertical: the Plinko tray sits under the board
+           on every screen, including wide desktop windows.
            ========================================= */
         const layoutGame = (() => {
             const root = document.documentElement;
@@ -1613,30 +1593,16 @@
                 const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
                 const gap = parseFloat(getComputedStyle(shell).rowGap) || 8;
 
-                const landscape = vw >= 640 && vw > vh * 1.15;
-                document.body.classList.toggle('landscape', landscape);
-
                 const topbarH = measureH(document.getElementById('app-topbar'));
                 const panelH = measureH(document.getElementById('control-panel'));
                 const hudH = measureH(document.getElementById('header-container'));
                 const footerH = measureH(shell.querySelector('.app-footer'));
                 const availW = vw - padX;
-                let size;
-
-                if (!landscape) {
-                    // topbar + [panel] + HUD + board (0.875 S) + plinko (0.75 S) + footer must fit vertically.
-                    // No minimum-height floor here: a floor makes the stack taller than the viewport,
-                    // which is what pushed the Plinko tray off-screen. Width and height both cap the size.
-                    const availH = vh - padY - topbarH - panelH - hudH - footerH - gap * (panelH ? 5 : 4);
-                    size = Math.min(availW, availH / 1.625, 520);
-                } else {
-                    const availH = vh - padY - topbarH - gap;
-                    size = Math.min(availH / 0.875, availW * 0.56, 560);
-                    let sideW = Math.min(availW - size - gap, size * 1.05);
-                    const stackH = panelH + hudH + footerH + gap * (panelH ? 3 : 2);
-                    if (stackH + sideW * 0.75 > size * 0.875) sideW = Math.max(180, (size * 0.875 - stackH) / 0.75);
-                    root.style.setProperty('--side-width', Math.floor(sideW) + 'px');
-                }
+                // topbar + [panel] + HUD + board (0.875 S) + plinko (0.75 S) + footer must fit vertically.
+                // No minimum-height floor here: a floor makes the stack taller than the viewport,
+                // which is what pushed the Plinko tray off-screen. Width and height both cap the size.
+                const availH = vh - padY - topbarH - panelH - hudH - footerH - gap * (panelH ? 5 : 4);
+                let size = Math.min(availW, availH / 1.625, 520);
 
                 size = Math.max(170, Math.floor(size));
                 root.style.setProperty('--board-size', size + 'px');
