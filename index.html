@@ -2260,15 +2260,20 @@
 
         /* ---- Flight overlay: a merged ball leaves the Plinko tray and is delivered to its Goal (or the Score pill) ---- */
         /* ---- SFX: tiny synthesized sound layer (Web Audio, no audio assets). ----
-           Browsers only allow sound after a user gesture, so the context is created/resumed on the
-           first pointer/touch/key event and every play call re-checks it. All sounds are short
-           oscillator or filtered-noise envelopes; MASTER_GAIN is the one volume knob. */
+           Browsers only start audio inside an ACTIVATING user gesture: touchend, pointerup, mouseup,
+           click and keydown count; touchstart / pointerdown / mousedown do not. The board's first drag
+           begins on touchstart, so unlocking there left the context suspended until a banner button was
+           clicked (next level / play again). The context is therefore resumed on the activating events,
+           and sounds are only scheduled while it runs (a suspended context would queue them and dump
+           them all at once on start). All sounds are short oscillator or filtered-noise envelopes;
+           MASTER_GAIN is the one volume knob. */
         const SFX = (() => {
             const AC = window.AudioContext || window.webkitAudioContext;
             const MASTER_GAIN = 0.35;
             let ctx = null, master = null;
+            let armed = false;   // true only inside the activating gesture that just asked the context to start
 
-            function ensure() {
+            function create() {
                 if (!AC) return null;
                 if (!ctx) {
                     ctx = new AC();
@@ -2276,11 +2281,24 @@
                     master.gain.value = MASTER_GAIN;
                     master.connect(ctx.destination);
                 }
-                if (ctx.state === 'suspended') ctx.resume();
                 return ctx;
             }
-            ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach(ev =>
-                window.addEventListener(ev, ensure, { passive: true, capture: true }));
+
+            ['touchend', 'pointerup', 'mouseup', 'click', 'keydown'].forEach(ev =>
+                window.addEventListener(ev, () => {
+                    const c = create();
+                    if (!c || c.state === 'running') return;
+                    armed = true;                             // sounds fired later in this same gesture may schedule
+                    c.resume().catch(() => {});
+                    setTimeout(() => { armed = false; }, 0);  // the gesture's dispatch is over by then
+                }, { passive: true, capture: true }));
+
+            // Returns the context only when a sound can actually play now (running, or starting in this gesture).
+            function ensure() {
+                const c = create();
+                if (!c) return null;
+                return (c.state === 'running' || armed) ? c : null;
+            }
 
             // One oscillator note: optional pitch glide (freq -> to) and a fast attack / exponential decay.
             function tone(o) {
