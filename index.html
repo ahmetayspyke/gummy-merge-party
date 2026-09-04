@@ -2689,13 +2689,13 @@
                     const f = flights[i];
                     if (f.sid !== sessionId) { flights.splice(i, 1); continue; }
                     const el = now - f.t0;
-                    let scaleX = 1, scaleY = 1, rot = 0;
+                    let scale = 1;                               // uniform: the bear never stretches
 
                     if (el < FLIGHT_TIMING.anticipate) {
                         const t = el / FLIGHT_TIMING.anticipate;
                         f.x = f.x0 - f.ux * WIND * t;
                         f.y = f.y0 - f.uy * WIND * t;
-                        scaleX = scaleY = 1 - 0.22 * t;
+                        scale = 1 - 0.22 * t;
                     } else {
                         const t = Math.min(1, (el - FLIGHT_TIMING.anticipate) / FLIGHT_TIMING.travel);
                         const p = easeInCubic(t);
@@ -2704,11 +2704,7 @@
                         const sx = f.x0 - f.ux * WIND, sy = f.y0 - f.uy * WIND;
                         f.x = sx + (f.tx - sx) * p;
                         f.y = sy + (f.ty - sy) * p;
-                        const speed = 6 * t * (1 - t);             // 0 → 1.5 → 0, peaks mid-flight
-                        const grow = 0.78 + 0.22 * easeOutBack(Math.min(1, t * 1.6));
-                        scaleX = grow + speed * 0.25;
-                        scaleY = grow - speed * 0.12;
-                        rot = Math.atan2(f.ty - sy, f.tx - sx);
+                        scale = 0.78 + 0.22 * easeOutBack(Math.min(1, t * 1.6));
                         f.trail.push({ x: f.x, y: f.y });
                         if (f.trail.length > 10) f.trail.shift();
                         if (t >= 1) f.done = true;
@@ -2717,9 +2713,7 @@
                     drawTrail(f);
                     fctx.save();
                     fctx.translate(f.x, f.y);
-                    fctx.rotate(rot);
-                    fctx.scale(scaleX, scaleY);
-                    fctx.rotate(-rot);
+                    fctx.scale(scale, scale);
                     drawJellyBall(fctx, 0, 0, f.r, f.color, f.mergeCount);
                     fctx.restore();
 
