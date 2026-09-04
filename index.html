@@ -2471,7 +2471,7 @@
         }
 
         /* ---- Flight overlay: a merged ball leaves the Plinko tray and is delivered to its Goal (or the Score pill) ---- */
-        const FLIGHT_TIMING = { pause: 150, anticipate: 130, travel: REDUCED_MOTION ? 260 : 440, combineWindow: 120 };
+        const FLIGHT_TIMING = { pause: 150, anticipate: 130, travel: REDUCED_MOTION ? 260 : 440, combineWindow: 120, dissolve: 260 };
 
         const Flights = (() => {
             const canvas = document.getElementById('flight-canvas');
@@ -3507,6 +3507,8 @@
                 this.delivering = false;
                 this.deliverAt = 0;
                 this.delivery = null;
+                this.dissolving = false;          // completed merge nobody wants: shrinks away, no bear forms
+                this.dissolveStart = 0;
 
                 this.triggeredLines = new Set();
             }
@@ -3561,14 +3563,15 @@
             }
 
             draw(ctx) {
-                drawJellyBall(ctx, this.x, this.y, this.radius * this.animScale, this.color, this.mergeCount);
+                drawJellyBall(ctx, this.x, this.y, this.radius * this.animScale, this.color, this.mergeCount, this.dissolving);
             }
         }
 
         // Shared jelly-ball renderer (Plinko tray and the delivery flight draw the same ball).
-        function drawJellyBall(ctx, x, y, currentDrawRadius, color, mergeCount) {
+        function drawJellyBall(ctx, x, y, currentDrawRadius, color, mergeCount, plain) {
             // Completed merges are free-standing gummy cutouts; physics radius is unchanged.
-            if (mergeCount >= maxMergeLimit) {
+            // `plain` keeps the jelly look for a completed ball that is dissolving instead of being delivered.
+            if (mergeCount >= maxMergeLimit && !plain) {
                 ctx.save();
                 ctx.translate(x, y);
                 drawGoalSprite(ctx, color, currentDrawRadius * 2.6);
@@ -3669,8 +3672,16 @@
         function scheduleDelivery(ball, delivery) {
             ball.delivering = true;               // physics/collisions ignore it from now on
             ball.delivery = delivery;
-            ball.deliverAt = performance.now() + FLIGHT_TIMING.pause;
             ball.vx = 0; ball.vy = 0;
+            if (delivery && delivery.target) {
+                ball.deliverAt = performance.now() + FLIGHT_TIMING.pause;
+            } else {
+                // Nobody wants it (goal already full, or Endless): no bear forms. The merge particles have
+                // already fired; the level-4 ball shrinks to nothing and releaseDelivery pops it in place.
+                ball.dissolving = true;
+                ball.dissolveStart = performance.now();
+                ball.deliverAt = ball.dissolveStart + FLIGHT_TIMING.dissolve;
+            }
         }
 
         function releaseDelivery(ball) {
@@ -3985,7 +3996,12 @@
             const now = performance.now();
             for (let ball of plinkoBalls) {
                 if (ball.delivering) {
-                    ball.animate();
+                    if (ball.dissolving) {
+                        const t = Math.min(1, (now - ball.dissolveStart) / FLIGHT_TIMING.dissolve);
+                        ball.animScale = 1.15 * (1 - t * t);      // brief pop, then shrinks to nothing
+                    } else {
+                        ball.animate();
+                    }
                     if (now >= ball.deliverAt) { releaseDelivery(ball); continue; }
                 } else {
                     ball.update();
