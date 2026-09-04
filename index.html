@@ -1233,7 +1233,7 @@
                 </div>
             </div>
             <div class="topbar-actions">
-                <button class="icon-btn" id="home-btn" onclick="goToMainMenu()" aria-label="Main Menu">🏠</button>
+                <button class="icon-btn" id="restart-btn" onclick="restartLevel()" aria-label="Restart Level">🔄</button>
             </div>
         </div>
 
@@ -1878,9 +1878,9 @@
         /* =========================================
            2. SCREENS: MAIN MENU ↔ GAME
            ========================================= */
-        // There is no mode-selection screen: the game always runs Goal Mode. The home button
-        // restarts the current level (same as a fresh start at the saved level).
-        function goToMainMenu() { startMode(GAME_MODES.GOAL); }
+        // There is no mode-selection screen: the game always runs Goal Mode. The top-bar restart
+        // button starts the current level over (same as a fresh start at the saved level).
+        function restartLevel() { startMode(GAME_MODES.GOAL); }
 
         function startMode(mode, quiet) {
             if (!quiet) SFX.click();
