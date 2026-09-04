@@ -1130,8 +1130,14 @@
         }
 
         #plinko-canvas {
+            /* Absolutely positioned against the wrapper's padding box, not an in-flow height:100%.
+               Same WebKit/Blink mismatch as #game-container: the wrapper's height comes from
+               aspect-ratio + border-box sizing, so an in-flow percentage height resolves against
+               its BORDER box in WebKit. The canvas ran 6px under the bottom border and the physics
+               floor (canvas bottom edge) was hidden, so balls looked like they sat behind the frame. */
             display: block;
-            position: relative;
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
             z-index: 1;
