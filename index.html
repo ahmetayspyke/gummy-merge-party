@@ -2174,6 +2174,7 @@
             let delivered = false;                       // a flight can only count once
             return {
                 target: document.getElementById('goal-item-' + mergeData.color),
+                aim: document.querySelector('#goal-item-' + mergeData.color + ' .goal-icon'),
                 onArrive: () => {
                     if (delivered || isGameOver) return;
                     delivered = true;
@@ -2503,8 +2504,10 @@
             }
 
             function launch(spec) {
-                // spec: { x, y, r, color, mergeCount, targetEl, onArrive }  (screen coordinates)
-                const t = targetCenter(spec.targetEl);
+                // spec: { x, y, r, color, mergeCount, targetEl, aimEl, onArrive }  (screen coordinates)
+                // aimEl is where the sprite lands (the bear icon); targetEl is what takes the hit (the chip).
+                const aimEl = spec.aimEl || spec.targetEl;
+                const t = targetCenter(aimEl);
                 const dx = t.x - spec.x, dy = t.y - spec.y;
                 const len = Math.hypot(dx, dy) || 1;
                 flights.push({
@@ -2512,7 +2515,7 @@
                     x0: spec.x, y0: spec.y, x: spec.x, y: spec.y, r: spec.r,
                     ux: dx / len, uy: dy / len,                 // unit direction toward the target
                     color: spec.color, mergeCount: spec.mergeCount,
-                    targetEl: spec.targetEl, tx: t.x, ty: t.y,
+                    targetEl: spec.targetEl, aimEl, tx: t.x, ty: t.y,
                     onArrive: spec.onArrive,
                     t0: performance.now(),
                     trail: [],
@@ -2557,7 +2560,7 @@
                     } else {
                         const t = Math.min(1, (el - FLIGHT_TIMING.anticipate) / FLIGHT_TIMING.travel);
                         const p = easeInOutCubic(t);
-                        const tc = targetCenter(f.targetEl);       // follow the chip if the layout shifts
+                        const tc = targetCenter(f.aimEl);          // follow the icon if the layout shifts
                         f.tx = tc.x; f.ty = tc.y;
                         const sx = f.x0 - f.ux * WIND, sy = f.y0 - f.uy * WIND;
                         f.x = sx + (f.tx - sx) * p;
@@ -2644,6 +2647,7 @@
                 color: ball.color,
                 mergeCount: ball.mergeCount,
                 targetEl: delivery.target,
+                aimEl: delivery.aim,
                 onArrive: delivery.onArrive
             });
         }
