@@ -2624,7 +2624,7 @@
 
         function launchMergedBallToGoal(ball, delivery) {
             const rect = plinkoCanvas.getBoundingClientRect();
-            const scale = rect.width / plinkoCanvas.width;
+            const scale = rect.width / PLINKO_W;
             Flights.launch({
                 x: rect.left + ball.x * scale,
                 y: rect.top + ball.y * scale,
@@ -2717,10 +2717,10 @@
                 el.appendChild(label);
             }
             // Percent positioning keeps popups aligned with the scaled canvas.
-            const cx = Math.max(30, Math.min(plinkoCanvas.width - 30, x));
+            const cx = Math.max(30, Math.min(PLINKO_W - 30, x));
             const cy = Math.max(20, y - 10);
-            el.style.left = (cx / plinkoCanvas.width * 100) + '%';
-            el.style.top = (cy / plinkoCanvas.height * 100) + '%';
+            el.style.left = (cx / PLINKO_W * 100) + '%';
+            el.style.top = (cy / PLINKO_H * 100) + '%';
             plinkoWrapper.appendChild(el);
             el.addEventListener('animationend', () => el.remove());
             setTimeout(() => el.remove(), 1000);
@@ -3391,8 +3391,24 @@
            ========================================= */
         const plinkoCanvas = document.getElementById('plinko-canvas');
         const pCtx = plinkoCanvas.getContext('2d');
+        // Logical tray size: physics, pegs, bands, FX and popups all live in this 400x300 space.
+        const PLINKO_W = 400, PLINKO_H = 300;
+        // The backing store is rendered at device resolution (the CSS box is ~3x larger on phones, so a
+        // plain 400x300 buffer looked soft). plinkoLoop maps the logical space onto it every frame.
+        let plinkoDpr = 1;
+        function sizePlinkoBackingStore() {
+            const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+            const bw = Math.round(PLINKO_W * dpr), bh = Math.round(PLINKO_H * dpr);
+            if (plinkoCanvas.width !== bw || plinkoCanvas.height !== bh) {
+                plinkoCanvas.width = bw;      // resizing also resets context state; the transform is re-applied per frame
+                plinkoCanvas.height = bh;
+            }
+            plinkoDpr = dpr;
+        }
+        sizePlinkoBackingStore();
+        window.addEventListener('resize', sizePlinkoBackingStore);
         // Merge impact FX inside the tray; stepped by plinkoLoop so it costs nothing extra when idle.
-        const plinkoFX = createFXLayer(pCtx, plinkoCanvas.width, plinkoCanvas.height, { max: 100 });
+        const plinkoFX = createFXLayer(pCtx, PLINKO_W, PLINKO_H, { max: 100 });
         let plinkoBalls = [];
         let plinkoPegs = [];
         let plinkoLines = [];
@@ -3425,7 +3441,7 @@
             for (let r = 0; r < pRows; r++) {
                 let pCols = r % 2 === 0 ? 8 : 7;
                 for (let c = 0; c < pCols; c++) {
-                    let x = (plinkoCanvas.width / 2) - ((pCols - 1) * spacingX / 2) + (c * spacingX);
+                    let x = (PLINKO_W / 2) - ((pCols - 1) * spacingX / 2) + (c * spacingX);
                     let y = 40 + r * spacingY;
                     plinkoPegs.push({ r: r, c: c, x: x, y: y, radius: 5 });
                 }
@@ -3532,12 +3548,12 @@
                 if (this.x - this.radius < 0) {
                     this.x = this.radius; this.vx *= -0.7;
                 }
-                if (this.x + this.radius > plinkoCanvas.width) {
-                    this.x = plinkoCanvas.width - this.radius; this.vx *= -0.7;
+                if (this.x + this.radius > PLINKO_W) {
+                    this.x = PLINKO_W - this.radius; this.vx *= -0.7;
                 }
 
-                if (this.y + this.radius > plinkoCanvas.height) {
-                    this.y = plinkoCanvas.height - this.radius;
+                if (this.y + this.radius > PLINKO_H) {
+                    this.y = PLINKO_H - this.radius;
                     this.vy *= -0.25;
                     this.vx *= 0.75;
                 }
@@ -3691,10 +3707,10 @@
             const t = (targetX === undefined) ? 0.5 : Math.max(0, Math.min(1, (targetX - boardMin) / (boardMax - boardMin)));
             const topRow = plinkoPegs.filter(p => p.r === 0);
             const pegMin = topRow.length ? Math.min(...topRow.map(p => p.x)) : 40;
-            const pegMax = topRow.length ? Math.max(...topRow.map(p => p.x)) : plinkoCanvas.width - 40;
+            const pegMax = topRow.length ? Math.max(...topRow.map(p => p.x)) : PLINKO_W - 40;
             const margin = PLINKO_ENTRY.margin;
             let startX = (pegMin + margin) + t * ((pegMax - margin) - (pegMin + margin)) + (Math.random() * 2 - 1) * PLINKO_ENTRY.jitter;
-            startX = Math.max(15, Math.min(plinkoCanvas.width - 15, startX));
+            startX = Math.max(15, Math.min(PLINKO_W - 15, startX));
             const ball = new PlinkoBall(startX, 10, color);
             // Edge columns get a gentle inward nudge so they meet the first pegs naturally.
             ball.vx += (0.5 - t) * PLINKO_ENTRY.nudge;
@@ -3812,7 +3828,8 @@
         }
 
         function plinkoLoop() {
-            pCtx.clearRect(0, 0, plinkoCanvas.width, plinkoCanvas.height);
+            pCtx.setTransform(plinkoDpr, 0, 0, plinkoDpr, 0, 0);
+            pCtx.clearRect(0, 0, PLINKO_W, PLINKO_H);
 
             updatePlinkoLines(performance.now());
             plinkoLines.forEach(drawLineBack);
